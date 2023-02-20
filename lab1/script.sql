@@ -45,7 +45,10 @@ $$
                     select string_agg(distinct pc.conname, ',')
                     from pg_constraint pc
                     where pc.conrelid = table_id
-                      and pc.conname ~* (column_record.attname) into column_constr;
+--                       and pc.conname ~* (column_record.attname)
+--                       and pc.contype = 'c'
+                    into column_constr;
+--                     raise notice 'Constr: %', column_constr;
 
                     select format('%-3s %-14s %-8s %-2s %s', column_number, my_column_name, 'Type', ':', column_type)
                     into result;
@@ -57,7 +60,7 @@ $$
                     end if;
 
                     if column_constr is not null then
-                        select format('%-5s %-20s %-25s %-15s %s', '.', ' ', ' ', 'Constr', column_constr) into result;
+                        select format('%-18s %-8s %-2s %s %s', '.', ' ', ' ', 'Constr', column_constr) into result;
                         raise notice '%', result;
                     end if;
                 end if;
