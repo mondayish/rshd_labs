@@ -9,7 +9,8 @@ $$
         column_type    text;
         column_type_id oid;
         column_comment text;
-        column_constr  text;
+        column_constr  text[];
+        constr_line    text;
         result         text;
     begin
         raise notice 'Таблица: %', :table_name;
@@ -46,13 +47,12 @@ $$
                       and objsubid = column_record.attnum;
                     column_comment = '"' || column_comment || '"';
 
-                    select string_agg(distinct pc.conname, ',')
+                    select array_agg('"' || pc.conname || '" ' || pg_get_constraintdef(pc.oid))
                     from pg_constraint pc
                     where pc.conrelid = table_id
                       and column_number = any (pc.conkey)
                       and pc.contype = 'c'
                     into column_constr;
-                    column_constr = '"' || column_constr || '"';
 
                     select format('%-3s %-14s %-8s %-2s %s', column_number, my_column_name, 'Type', ':', column_type)
                     into result;
@@ -64,8 +64,10 @@ $$
                     end if;
 
                     if column_constr is not null then
-                        select format('%-18s %-8s %-2s %s', '|', 'Constr', ':', column_constr) into result;
-                        raise notice '%', result;
+                        foreach constr_line in array column_constr loop
+                            select format('%-18s %-8s %-2s %s', '|', 'Constr', ':', constr_line) into result;
+                            raise notice '%', result;
+                        end loop;
                     end if;
                 end if;
             end loop;
